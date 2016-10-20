@@ -103,72 +103,72 @@ private final class TweakDiskPersistency {
 			try! nsData.write(to: self.fileURL, options: [.atomic])
 		}
 	}
+}
 
-	/// Implements NSCoding for TweakCache.
-	/// TweakCache a flat dictionary: [String: TweakableType]. 
-	/// However, because re-hydrating TweakableType from its underlying NSNumber gets Bool & Int mixed up, we have to persist a different structure on disk: [TweakViewDataType: [String: AnyObject]]
-	/// This ensures that if something was saved as a Bool, it's read back as a Bool.
-	@objc private final class Data: NSObject, NSCoding {
-		let cache: TweakCache
-
-		init(cache: TweakCache) {
-			self.cache = cache
-		}
-
-		@objc convenience init?(coder aDecoder: NSCoder) {
-			var cache: TweakCache = [:]
-
-			// Read through each TweakViewDataType...
-			for dataType in TweakViewDataType.allTypes {
-				// If a sub-dictionary exists for that type,
-				if let dataTypeDictionary = aDecoder.decodeObject(forKey: dataType.nsCodingKey) as? Dictionary<String, AnyObject> {
-					// Read through each entry and populate the cache
-					for (key, value) in dataTypeDictionary {
-						if let value = Data.tweakableTypeWithAnyObject(value, withType: dataType) {
-							cache[key] = value
-						}
-					}
-				}
-			}
-
-			self.init(cache: cache)
-		}
-
-		@objc fileprivate func encode(with aCoder: NSCoder) {
-
-			// Our "dictionary of dictionaries" that is persisted on disk
-			var diskPersistedDictionary: [TweakViewDataType : [String: AnyObject]] = [:]
-
-			// For each thing in our TweakCache,
-			for (key, value) in cache {
-				let dataType = type(of: value).tweakViewDataType
-
-				// ... create the "sub-dictionary" if it doesn't already exist for a particular TweakViewDataType
-				if diskPersistedDictionary[dataType] == nil {
-					diskPersistedDictionary[dataType] = [:]
-				}
-
-				// ... and set the cached value inside the sub-dictionary.
-				diskPersistedDictionary[dataType]![key] = value.nsCoding
-			}
-
-			// Now we persist the "dictionary of dictionaries" on disk!
-			for (key, value) in diskPersistedDictionary {
-				aCoder.encode(value, forKey: key.nsCodingKey)
-			}
-		}
-
-		// Reads from the cache, casting to the appropriate TweakViewDataType
-		private static func tweakableTypeWithAnyObject(_ anyObject: AnyObject, withType type: TweakViewDataType) -> TweakableType? {
-			switch type {
-			case .integer: return anyObject as? Int
-			case .boolean: return anyObject as? Bool
-			case .cgFloat: return anyObject as? CGFloat
-			case .double: return anyObject as? Double
-			case .uiColor: return anyObject as? UIColor
-			}
-		}
-	}
+/// Implements NSCoding for TweakCache.
+/// TweakCache a flat dictionary: [String: TweakableType].
+/// However, because re-hydrating TweakableType from its underlying NSNumber gets Bool & Int mixed up, we have to persist a different structure on disk: [TweakViewDataType: [String: AnyObject]]
+/// This ensures that if something was saved as a Bool, it's read back as a Bool.
+@objc private final class Data: NSObject, NSCoding {
+    let cache: TweakCache
+    
+    init(cache: TweakCache) {
+        self.cache = cache
+    }
+    
+    @objc convenience init?(coder aDecoder: NSCoder) {
+        var cache: TweakCache = [:]
+        
+        // Read through each TweakViewDataType...
+        for dataType in TweakViewDataType.allTypes {
+            // If a sub-dictionary exists for that type,
+            if let dataTypeDictionary = aDecoder.decodeObject(forKey: dataType.nsCodingKey) as? Dictionary<String, AnyObject> {
+                // Read through each entry and populate the cache
+                for (key, value) in dataTypeDictionary {
+                    if let value = Data.tweakableTypeWithAnyObject(value, withType: dataType) {
+                        cache[key] = value
+                    }
+                }
+            }
+        }
+        
+        self.init(cache: cache)
+    }
+    
+    @objc fileprivate func encode(with aCoder: NSCoder) {
+        
+        // Our "dictionary of dictionaries" that is persisted on disk
+        var diskPersistedDictionary: [TweakViewDataType : [String: AnyObject]] = [:]
+        
+        // For each thing in our TweakCache,
+        for (key, value) in cache {
+            let dataType = type(of: value).tweakViewDataType
+            
+            // ... create the "sub-dictionary" if it doesn't already exist for a particular TweakViewDataType
+            if diskPersistedDictionary[dataType] == nil {
+                diskPersistedDictionary[dataType] = [:]
+            }
+            
+            // ... and set the cached value inside the sub-dictionary.
+            diskPersistedDictionary[dataType]![key] = value.nsCoding
+        }
+        
+        // Now we persist the "dictionary of dictionaries" on disk!
+        for (key, value) in diskPersistedDictionary {
+            aCoder.encode(value, forKey: key.nsCodingKey)
+        }
+    }
+    
+    // Reads from the cache, casting to the appropriate TweakViewDataType
+    private static func tweakableTypeWithAnyObject(_ anyObject: AnyObject, withType type: TweakViewDataType) -> TweakableType? {
+        switch type {
+        case .integer: return anyObject as? Int
+        case .boolean: return anyObject as? Bool
+        case .cgFloat: return anyObject as? CGFloat
+        case .double: return anyObject as? Double
+        case .uiColor: return anyObject as? UIColor
+        }
+    }
 }
 
 private extension TweakViewDataType {
