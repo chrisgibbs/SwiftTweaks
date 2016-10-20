@@ -41,7 +41,7 @@ import UIKit
 		if tweakStore.enabled {
 			switch gestureType {
 			case .shake: return shaking || runningInSimulator
-			case .gesture: return true
+			case .gesture: return false
 			}
 		} else {
 			return false
